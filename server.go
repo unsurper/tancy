@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"runtime/debug"
 	"strconv"
 	"sync"
 
@@ -87,6 +88,11 @@ func (server *Server) Run(network string, port int) error {
 	return server.server.Serve()
 }
 
+// 关闭连接
+func (session *Session) Close() error {
+	return session.session.Close()
+}
+
 // 处理读超时
 func (server *Server) handleReadTimeout(key string) {
 	sessionID, err := strconv.ParseUint(key, 10, 64)
@@ -115,6 +121,30 @@ func (server *Server) GetSession(id uint64) (*Session, bool) {
 		return nil, false
 	}
 	return session, true
+}
+
+// 处理关闭
+func (server *Server) handleClose(session *Session) {
+	server.mutex.Lock()
+	delete(server.sessions, session.ID())
+	server.mutex.Unlock()
+
+	server.timer.Remove(strconv.FormatUint(session.ID(), 10))
+	if server.closeHandler != nil {
+		func() {
+			defer func() {
+				if err := recover(); err != nil {
+					debug.PrintStack()
+				}
+			}()
+			server.closeHandler(session)
+		}()
+	}
+
+	log.WithFields(log.Fields{
+		"id":        session.ID(),
+		"device_id": session.iccID,
+	}).Debug("session closed")
 }
 
 func (server *Server) Listener() net.Listener {

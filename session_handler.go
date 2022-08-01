@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/funny/link"
 	log "github.com/sirupsen/logrus"
+	"github.com/unsurper/tancy/protocol"
 	"io/ioutil"
 	"reflect"
 	"strconv"

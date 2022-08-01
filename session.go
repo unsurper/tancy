@@ -3,6 +3,7 @@ package tancy
 import (
 	"errors"
 	"github.com/funny/link"
+	"github.com/unsurper/tancy/protocol"
 	"sync"
 	"sync/atomic"
 )
@@ -32,175 +33,61 @@ type Session struct {
 	UserData interface{}
 }
 
-func NewSession(codec Codec, sendChanSize int) *Session {
-	return newSession(nil, codec, sendChanSize)
-}
-
-func newSession(manager *Manager, codec Codec, sendChanSize int) *Session {
-	session := &Session{
-		codec:     codec,
-		manager:   manager,
-		closeChan: make(chan int),
-		id:        atomic.AddUint64(&globalSessionId, 1),
+// 创建Session
+func newSession(server *Server, sess *link.Session) *Session {
+	return &Session{
+		server:  server,
+		session: sess,
 	}
-	if sendChanSize > 0 {
-		session.sendChan = make(chan interface{}, sendChanSize)
-		go session.sendLoop()
+}
+
+// 发送消息
+func (session *Session) Send(entity protocol.Entity) (uint16, error) {
+	message := protocol.Message{
+		Body: entity,
+		Header: protocol.Header{
+			MsgID:       entity.MsgID(),
+			IccID:       atomic.LoadUint64(&session.iccID),
+			MsgSerialNo: session.nextID(),
+		},
 	}
-	return session
-}
 
-func (session *Session) ID() uint64 {
-	return session.id
-}
-
-func (session *Session) IsClosed() bool {
-	return atomic.LoadInt32(&session.closeFlag) == 1
-}
-
-func (session *Session) Close() error {
-	if atomic.CompareAndSwapInt32(&session.closeFlag, 0, 1) {
-		close(session.closeChan)
-
-		if session.sendChan != nil {
-			session.sendMutex.Lock()
-			close(session.sendChan)
-			if clear, ok := session.codec.(ClearSendChan); ok {
-				clear.ClearSendChan(session.sendChan)
-			}
-			session.sendMutex.Unlock()
-		}
-
-		err := session.codec.Close()
-
-		go func() {
-			session.invokeCloseCallbacks()
-
-			if session.manager != nil {
-				session.manager.delSession(session)
-			}
-		}()
-		return err
-	}
-	return SessionClosedError
-}
-
-func (session *Session) Codec() Codec {
-	return session.codec
-}
-
-func (session *Session) Receive() (interface{}, error) {
-	session.recvMutex.Lock()
-	defer session.recvMutex.Unlock()
-
-	msg, err := session.codec.Receive()
+	err := session.session.Send(message)
 	if err != nil {
-		session.Close()
+		return 0, err
 	}
-	return msg, err
+	return message.Header.MsgSerialNo, nil
 }
 
-func (session *Session) sendLoop() {
-	defer session.Close()
+// 获取消息ID
+func (session *Session) nextID() uint16 {
+	var id uint32
 	for {
-		select {
-		case msg, ok := <-session.sendChan:
-			if !ok || session.codec.Send(msg) != nil {
-				return
+		id = atomic.LoadUint32(&session.next)
+		if id == 0xff {
+			if atomic.CompareAndSwapUint32(&session.next, id, 1) {
+				id = 1
+				break
 			}
-		case <-session.closeChan:
-			return
+		} else if atomic.CompareAndSwapUint32(&session.next, id, id+1) {
+			id += 1
+			break
 		}
 	}
+	return uint16(id)
 }
 
-func (session *Session) Send(msg interface{}) error {
-	if session.sendChan == nil {
-		if session.IsClosed() {
-			return SessionClosedError
-		}
-
-		session.sendMutex.Lock()
-		defer session.sendMutex.Unlock()
-
-		err := session.codec.Send(msg)
-		if err != nil {
-			session.Close()
-		}
-		return err
+// 回复消息
+func (session *Session) Reply(msg *protocol.Message, result protocol.Result) (uint16, error) {
+	entity := protocol.T808_0x8001{
+		ReplyMsgSerialNo: msg.Header.MsgSerialNo,
+		ReplyMsgID:       msg.Header.MsgID,
+		Result:           result,
 	}
-
-	session.sendMutex.RLock()
-	if session.IsClosed() {
-		session.sendMutex.RUnlock()
-		return SessionClosedError
-	}
-
-	select {
-	case session.sendChan <- msg:
-		session.sendMutex.RUnlock()
-		return nil
-	default:
-		session.sendMutex.RUnlock()
-		session.Close()
-		return SessionBlockedError
-	}
+	return session.Send(&entity)
 }
 
-type closeCallback struct {
-	Handler interface{}
-	Key     interface{}
-	Func    func()
-	Next    *closeCallback
-}
-
-func (session *Session) AddCloseCallback(handler, key interface{}, callback func()) {
-	if session.IsClosed() {
-		return
-	}
-
-	session.closeMutex.Lock()
-	defer session.closeMutex.Unlock()
-
-	newItem := &closeCallback{handler, key, callback, nil}
-
-	if session.firstCloseCallback == nil {
-		session.firstCloseCallback = newItem
-	} else {
-		session.lastCloseCallback.Next = newItem
-	}
-	session.lastCloseCallback = newItem
-}
-
-func (session *Session) RemoveCloseCallback(handler, key interface{}) {
-	if session.IsClosed() {
-		return
-	}
-
-	session.closeMutex.Lock()
-	defer session.closeMutex.Unlock()
-
-	var prev *closeCallback
-	for callback := session.firstCloseCallback; callback != nil; prev, callback = callback, callback.Next {
-		if callback.Handler == handler && callback.Key == key {
-			if session.firstCloseCallback == callback {
-				session.firstCloseCallback = callback.Next
-			} else {
-				prev.Next = callback.Next
-			}
-			if session.lastCloseCallback == callback {
-				session.lastCloseCallback = prev
-			}
-			return
-		}
-	}
-}
-
-func (session *Session) invokeCloseCallbacks() {
-	session.closeMutex.Lock()
-	defer session.closeMutex.Unlock()
-
-	for callback := session.firstCloseCallback; callback != nil; callback = callback.Next {
-		callback.Func()
-	}
+// 获取ID
+func (session *Session) ID() uint64 {
+	return session.session.ID()
 }

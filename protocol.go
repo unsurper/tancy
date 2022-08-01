@@ -6,9 +6,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/funny/link"
-	"github.com/liveej/go808/errors"
-	"github.com/liveej/go808/protocol"
 	log "github.com/sirupsen/logrus"
+	"github.com/unsurper/tancy/errors"
+	"github.com/unsurper/tancy/protocol"
 	"io"
 )
 
