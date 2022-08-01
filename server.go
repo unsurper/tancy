@@ -3,6 +3,7 @@ package tancy
 import (
 	"crypto/rsa"
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"sync"
@@ -64,6 +65,26 @@ func NewServer(options Options) (*Server, error) {
 	server.handler.autoMergePacket = options.AutoMergePacket
 	server.timer = NewCountdownTimer(options.Keepalive, server.handleReadTimeout)
 	return &server, nil
+}
+
+// 运行服务
+func (server *Server) Run(network string, port int) error {
+	if server.server != nil {
+		return errors.New("server already running")
+	}
+
+	address := fmt.Sprintf("0.0.0.0:%d", port)
+	listen, err := net.Listen(network, address)
+	if err != nil {
+		return err
+	}
+
+	p := Protocol{
+		privateKey: server.privateKey,
+	}
+	server.server = link.NewServer(listen, &p, 24, server.handler)
+	log.Infof("[tancy-flow] protocol server started on %s", address)
+	return server.server.Serve()
 }
 
 // 处理读超时
