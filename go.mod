@@ -1,4 +1,4 @@
-module github.com/liveej/go808
+module github.com/unsurper/tancy
 
 go 1.13
 
