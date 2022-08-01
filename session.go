@@ -1,7 +1,8 @@
-package link
+package tancy
 
 import (
 	"errors"
+	"github.com/funny/link"
 	"sync"
 	"sync/atomic"
 )
@@ -11,21 +12,24 @@ var SessionBlockedError = errors.New("Session Blocked")
 
 var globalSessionId uint64
 
+// 请求上下文
+type requestContext struct {
+	msgID    uint16
+	serialNo uint16
+	callback func(answer *protocol.Message)
+}
+
+// 终端会话
 type Session struct {
-	id        uint64
-	codec     Codec
-	manager   *Manager
-	sendChan  chan interface{}
-	recvMutex sync.Mutex
-	sendMutex sync.RWMutex
+	next    uint32
+	iccID   uint64
+	server  *Server
+	session *link.Session
 
-	closeFlag          int32
-	closeChan          chan int
-	closeMutex         sync.Mutex
-	firstCloseCallback *closeCallback
-	lastCloseCallback  *closeCallback
+	mux      sync.Mutex
+	requests []requestContext
 
-	State interface{}
+	UserData interface{}
 }
 
 func NewSession(codec Codec, sendChanSize int) *Session {
