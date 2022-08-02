@@ -135,31 +135,3 @@ func (server *Server) handleClose(session *Session) {
 		"device_id": session.iccID,
 	}).Debug("session closed")
 }
-
-func (server *Server) Listener() net.Listener {
-	return server.listener
-}
-
-func (server *Server) Serve() error {
-	for {
-		conn, err := Accept(server.listener)
-		if err != nil {
-			return err
-		}
-
-		go func() {
-			codec, err := server.protocol.NewCodec(conn)
-			if err != nil {
-				conn.Close()
-				return
-			}
-			session := server.manager.NewSession(codec, server.sendChanSize)
-			server.handler.HandleSession(session)
-		}()
-	}
-}
-
-func (server *Server) Stop() {
-	server.listener.Close()
-	server.manager.Dispose()
-}

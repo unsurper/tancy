@@ -1,11 +1,9 @@
 package tancy
 
 import (
-	"fmt"
 	"github.com/funny/link"
 	log "github.com/sirupsen/logrus"
 	"github.com/unsurper/tancy/protocol"
-	"io/ioutil"
 	"reflect"
 	"strconv"
 )
@@ -46,69 +44,5 @@ func (handler sessionHandler) HandleSession(sess *link.Session) {
 			continue
 		}
 
-		if !handler.autoMergePacket || !message.Header.Property.IsEnablePacket() {
-			session.message(&message)
-			handler.server.dispatchMessage(session, &message)
-			continue
-		}
-
-		// 处理分包消息
-		entityPacket, ok := interface{}(message.Body).(protocol.EntityPacket)
-		if !ok {
-			session.message(&message)
-			handler.server.dispatchMessage(session, &message)
-			continue
-		}
-
-		multipartFile := MultipartFile{
-			IccID: message.Header.IccID,
-			MsgID: message.Header.MsgID,
-			Tag:   entityPacket.GetTag(),
-			Sum:   message.Header.Packet.Sum,
-		}
-		buf, err := ioutil.ReadAll(entityPacket.GetReader())
-		if err != nil {
-			log.WithFields(log.Fields{
-				"iccid":  message.Header.IccID,
-				"msgid":  fmt.Sprintf("0x%x", message.Header.MsgID),
-				"seq":    message.Header.Packet.Seq,
-				"reason": err,
-			}).Warn("[JT/T 808] failed to read packet data")
-			session.Reply(&message, protocol.T808_0x8001ResultFail)
-			continue
-		}
-
-		err = multipartFile.Write(message.Header.Packet.Seq, buf)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"iccid":  message.Header.IccID,
-				"msgid":  fmt.Sprintf("0x%x", message.Header.MsgID),
-				"seq":    message.Header.Packet.Seq,
-				"reason": err,
-			}).Warn("[JT/T 808] failed to write packet data to file")
-			session.Reply(&message, protocol.T808_0x8001ResultFail)
-			continue
-		}
-
-		session.Reply(&message, protocol.T808_0x8001ResultSuccess)
-		if message.Header.Packet.Seq != message.Header.Packet.Sum || !multipartFile.IsFull() {
-			continue
-		}
-
-		reader, err := multipartFile.Merge()
-		if err != nil {
-			log.WithFields(log.Fields{
-				"iccid":  message.Header.IccID,
-				"msgid":  fmt.Sprintf("0x%x", message.Header.MsgID),
-				"reason": err,
-			}).Warn("[JT/T 808] failed to merge packet file parts")
-			continue
-		}
-
-		// 分发分包消息
-		entityPacket.SetReader(reader)
-		session.message(&message)
-		handler.server.dispatchMessage(session, &message)
-		reader.Close()
 	}
 }
