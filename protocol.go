@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/unsurper/tancy/errors"
 	"github.com/unsurper/tancy/protocol"
+
 	"io"
 )
 
@@ -140,6 +141,26 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	}
 
 	data := codec.bufferReceiving.Bytes()
+	if data[0] == protocol.RegisterByte && data[1] == protocol.RegisterByte {
+		i := 2
+		for ; i < len(data); i++ {
+			if data[i] == protocol.Ipmark {
+				break
+			}
+		}
+		j := i
+		for ; j < len(data); j++ {
+			if data[j] == protocol.Voltagemark {
+				break
+			}
+		}
+		log.WithFields(log.Fields{
+			"DTU":     fmt.Sprintf("%s", data[2:i]),
+			"IP":      fmt.Sprintf("%s", data[i+3:j]),
+			"Voltage": fmt.Sprintf("%s", data[j+2:len(data)-1]),
+		}).Info("Register DTU")
+	}
+
 	if data[0] != protocol.PrefixID {
 		i := 0
 		for ; i < len(data); i++ {

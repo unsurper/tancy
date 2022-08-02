@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"github.com/liveej/go808/errors"
+	"github.com/unsurper/tancy/errors"
 )
 
 // 消息体属性

@@ -1,6 +1,15 @@
 package protocol
 
 const (
+	//注册
+	RegisterByte = byte(0x40)
+
+	//IP
+	Ipmark = byte(0x49)
+
+	//voltagemark
+	Voltagemark = byte(0x23)
+
 	// 标志位
 	PrefixID = byte(0x7e)
 

@@ -3,8 +3,6 @@ package tancy
 import (
 	"github.com/funny/link"
 	log "github.com/sirupsen/logrus"
-	"github.com/unsurper/tancy/protocol"
-	"reflect"
 	"strconv"
 )
 
@@ -31,17 +29,10 @@ func (handler sessionHandler) HandleSession(sess *link.Session) {
 
 	for {
 		// 接收消息
-		msg, err := sess.Receive()
+		_, err := sess.Receive()
 		if err != nil {
 			sess.Close()
 			break
-		}
-
-		// 分发消息
-		message := msg.(protocol.Message)
-		if message.Body == nil || reflect.ValueOf(message.Body).IsNil() {
-			session.Reply(&message, protocol.T808_0x8001ResultUnsupported)
-			continue
 		}
 
 	}
