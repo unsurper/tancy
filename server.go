@@ -1,7 +1,6 @@
 package tancy
 
 import (
-	"crypto/rsa"
 	"errors"
 	"fmt"
 	"net"
@@ -15,19 +14,15 @@ import (
 
 // 服务器选项
 type Options struct {
-	Keepalive       int64
-	AutoMergePacket bool
-	CloseHandler    func(*Session)
-	PrivateKey      *rsa.PrivateKey
+	Keepalive    int64
+	CloseHandler func(*Session)
 }
 
 // 协议服务器
 type Server struct {
-	server     *link.Server
-	handler    sessionHandler
-	timer      *CountdownTimer
-	privateKey *rsa.PrivateKey
-
+	server   *link.Server
+	handler  sessionHandler
+	timer    *CountdownTimer
 	mutex    sync.Mutex
 	sessions map[uint64]*Session
 
@@ -53,17 +48,11 @@ func NewServer(options Options) (*Server, error) {
 		options.Keepalive = 60
 	}
 
-	if options.PrivateKey != nil && options.PrivateKey.Size() != 128 {
-		return nil, errors.New("RSA key must be 1024 bits")
-	}
-
 	server := Server{
 		closeHandler: options.CloseHandler,
 		sessions:     make(map[uint64]*Session),
-		privateKey:   options.PrivateKey,
 	}
 	server.handler.server = &server
-	server.handler.autoMergePacket = options.AutoMergePacket
 	server.timer = NewCountdownTimer(options.Keepalive, server.handleReadTimeout)
 	return &server, nil
 }
@@ -80,10 +69,10 @@ func (server *Server) Run(network string, port int) error {
 		return err
 	}
 
-	p := Protocol{
-		privateKey: server.privateKey,
-	}
-	server.server = link.NewServer(listen, &p, 24, server.handler)
+	//p := Protocol{
+	//	privateKey: server.privateKey,
+	//}
+	server.server = link.NewServer(listen, nil, 24, server.handler)
 	log.Infof("[tancy-flow] protocol server started on %s", address)
 	return server.server.Serve()
 }
