@@ -1,6 +1,7 @@
 package tancy
 
 import (
+	"crypto/rsa"
 	"errors"
 	"fmt"
 	"net"
@@ -16,16 +17,17 @@ import (
 type Options struct {
 	Keepalive    int64
 	CloseHandler func(*Session)
+	PrivateKey   *rsa.PrivateKey
 }
 
 // 协议服务器
 type Server struct {
-	server   *link.Server
-	handler  sessionHandler
-	timer    *CountdownTimer
-	mutex    sync.Mutex
-	sessions map[uint64]*Session
-
+	server          *link.Server
+	handler         sessionHandler
+	timer           *CountdownTimer
+	mutex           sync.Mutex
+	sessions        map[uint64]*Session
+	privateKey      *rsa.PrivateKey
 	closeHandler    func(*Session)
 	messageHandlers sync.Map
 }
@@ -69,10 +71,10 @@ func (server *Server) Run(network string, port int) error {
 		return err
 	}
 
-	//p := Protocol{
-	//	privateKey: server.privateKey,
-	//}
-	server.server = link.NewServer(listen, nil, 24, server.handler)
+	p := Protocol{
+		privateKey: server.privateKey,
+	}
+	server.server = link.NewServer(listen, &p, 24, server.handler)
 	log.Infof("[tancy-flow] protocol server started on %s", address)
 	return server.server.Serve()
 }
