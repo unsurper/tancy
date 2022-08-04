@@ -165,6 +165,15 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 
 
 	*/
+	//标识头识别
+	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
+		fmt.Println(data[0], protocol.RegisterByte, protocol.SendByte, protocol.ReceiveByte)
+		log.WithFields(log.Fields{
+			"data":   hex.EncodeToString(data),
+			"reason": errors.ErrNotFoundPrefixID,
+		}).Error("[tancy-flow] failed to receive message")
+		return protocol.Message{}, false, errors.ErrNotFoundPrefixID
+	}
 
 	//CRC16验证
 	if data[0] == protocol.SendByte || data[0] == protocol.ReceiveByte {
@@ -175,7 +184,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		crc16HashData := crc16Hash.Sum(nil)
 		crc16HashData2 := hex.EncodeToString(crc16HashData)
 		data[datalen-1], data[datalen-2] = data[datalen-2], data[datalen-1]
-		dataHash := hex.EncodeToString(data[datalen-2:])
+		dataHash := hex.EncodeToString(data[datalen-2 : datalen])
 		if dataHash != crc16HashData2 {
 			log.WithFields(log.Fields{
 				"data":   hex.EncodeToString(data),
@@ -183,23 +192,6 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 			}).Error("[tancy-flow] CRC16 is Wrong")
 			return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 		}
-
-	}
-
-	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
-		fmt.Println(data[0], protocol.RegisterByte, protocol.SendByte, protocol.ReceiveByte)
-		//i := 0
-		//for ; i < len(data); i++ {
-		//	if data[i] == protocol.PrefixID {
-		//		break
-		//	}
-		//}
-		//codec.bufferReceiving.Next(i)
-		log.WithFields(log.Fields{
-			"data":   hex.EncodeToString(data),
-			"reason": errors.ErrNotFoundPrefixID,
-		}).Error("[tancy-flow] failed to receive message")
-		return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 	}
 
 	//end := 1
