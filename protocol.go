@@ -5,11 +5,11 @@ import (
 	"crypto/rsa"
 	"encoding/hex"
 	"fmt"
+	"github.com/deatil/go-crc16/crc16"
 	"github.com/funny/link"
 	log "github.com/sirupsen/logrus"
 	"github.com/unsurper/tancy/errors"
 	"github.com/unsurper/tancy/protocol"
-
 	"io"
 )
 
@@ -141,61 +141,85 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	}
 
 	data := codec.bufferReceiving.Bytes()
-	if data[0] == protocol.RegisterByte && data[1] == protocol.RegisterByte {
-		i := 2
-		for ; i < len(data); i++ {
-			if data[i] == protocol.Ipmark {
-				break
+
+	/*
+		if data[0] == protocol.RegisterByte && data[1] == protocol.RegisterByte {
+			i := 2
+			for ; i < len(data); i++ {
+				if data[i] == protocol.Ipmark {
+					break
+				}
 			}
-		}
-		j := i
-		for ; j < len(data); j++ {
-			if data[j] == protocol.Voltagemark {
-				break
+			j := i
+			for ; j < len(data); j++ {
+				if data[j] == protocol.Voltagemark {
+					break
+				}
 			}
+			log.WithFields(log.Fields{
+				"DTU":     fmt.Sprintf("%s", data[2:i]),
+				"IP":      fmt.Sprintf("%s", data[i+3:j]),
+				"Voltage": fmt.Sprintf("%s", data[j+2:len(data)-1]),
+			}).Info("Register DTU")
 		}
-		log.WithFields(log.Fields{
-			"DTU":     fmt.Sprintf("%s", data[2:i]),
-			"IP":      fmt.Sprintf("%s", data[i+3:j]),
-			"Voltage": fmt.Sprintf("%s", data[j+2:len(data)-1]),
-		}).Info("Register DTU")
+
+
+	*/
+
+	//CRC16验证
+	if data[0] == protocol.SendByte || data[0] == protocol.ReceiveByte {
+		var datalen int
+		datalen = int(data[1])
+		crc16Hash := crc16.NewCRC16Hash(crc16.CRC16_MODBUS)
+		crc16Hash.Write(data[:datalen-2])
+		crc16HashData := crc16Hash.Sum(nil)
+		crc16HashData2 := hex.EncodeToString(crc16HashData)
+		data[datalen-1], data[datalen-2] = data[datalen-2], data[datalen-1]
+		dataHash := hex.EncodeToString(data[datalen-2:])
+		if dataHash != crc16HashData2 {
+			log.WithFields(log.Fields{
+				"data":   hex.EncodeToString(data),
+				"reason": errors.ErrNotFoundPrefixID,
+			}).Error("[tancy-flow] CRC16 is Wrong")
+			return protocol.Message{}, false, errors.ErrNotFoundPrefixID
+		}
+
 	}
 
-	if data[0] != protocol.PrefixID {
-		i := 0
-		for ; i < len(data); i++ {
-			if data[i] == protocol.PrefixID {
-				break
-			}
-		}
-		codec.bufferReceiving.Next(i)
+	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
+		fmt.Println(data[0], protocol.RegisterByte, protocol.SendByte, protocol.ReceiveByte)
+		//i := 0
+		//for ; i < len(data); i++ {
+		//	if data[i] == protocol.PrefixID {
+		//		break
+		//	}
+		//}
+		//codec.bufferReceiving.Next(i)
 		log.WithFields(log.Fields{
 			"data":   hex.EncodeToString(data),
 			"reason": errors.ErrNotFoundPrefixID,
-		}).Error("[JT/T 808] failed to receive message")
+		}).Error("[tancy-flow] failed to receive message")
 		return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 	}
 
-	end := 1
-	for ; end < len(data); end++ {
-		if data[end] == protocol.PrefixID {
-			break
-		}
-	}
-	if end == len(data) {
-		return protocol.Message{}, false, nil
-	}
+	//end := 1
+	//for ; end < len(data); end++ {
+	//	if data[end] == protocol.PrefixID {
+	//		break
+	//	}
+	//}
+	//if end == len(data) {
+	//	return protocol.Message{}, false, nil
+	//}
 
 	var message protocol.Message
-	if err := message.Decode(data[:end+1], codec.privateKey); err != nil {
-		codec.bufferReceiving.Next(end + 1)
+	if err := message.Decode(data, codec.privateKey); err != nil {
 		log.WithFields(log.Fields{
-			"data":   fmt.Sprintf("0x%x", hex.EncodeToString(data[:end+1])),
+			"data":   fmt.Sprintf("0x%x", hex.EncodeToString(data)),
 			"reason": err,
 		}).Error("[JT/T 808] failed to receive message")
 		return protocol.Message{}, false, err
 	}
-	codec.bufferReceiving.Next(end + 1)
 
 	log.WithFields(log.Fields{
 		"device_id":   message.Header.IccID,
@@ -204,7 +228,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 
 	log.WithFields(log.Fields{
 		"device_id": message.Header.IccID,
-		"hex":       fmt.Sprintf("%0X", data[:end+1]),
+		"hex":       fmt.Sprintf("%0X", data),
 		//"Hex": fmt.Sprintf("0x%x", hex.EncodeToString(data[:end+1])),
 	}).Trace("RX Raw:")
 
