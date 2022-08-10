@@ -2,7 +2,7 @@ package protocol
 
 import "time"
 
-type tancy_0x0008 struct {
+type Tancy_0x0008 struct {
 	// 数据
 	Dates []Date
 	// 当前价格
@@ -34,16 +34,16 @@ type Date struct {
 	Remain uint32
 }
 
-func (entity *tancy_0x0008) MsgID() MsgID {
+func (entity *Tancy_0x0008) MsgID() MsgID {
 	return Msgtancy_0x0008
 }
 
-func (entity *tancy_0x0008) Encode() ([]byte, error) {
+func (entity *Tancy_0x0008) Encode() ([]byte, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (entity *tancy_0x0008) Decode(data []byte) (int, error) {
+func (entity *Tancy_0x0008) Decode(data []byte) (int, error) {
 	if len(data) < 50 {
 		return 0, ErrInvalidBody
 	}

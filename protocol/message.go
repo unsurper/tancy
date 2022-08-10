@@ -82,9 +82,9 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 
 	var header Header
 	header.MsgID = MsgID(data[0])
-	header.IccID, _ = strconv.ParseUint(string(data[1:8]), 10, 64)
-	header.DecID, _ = strconv.ParseUint(string(data[9:16]), 10, 64)
-	header.LocID, _ = strconv.ParseUint(string(data[17:22]), 10, 64)
+	header.DecID, _ = strconv.ParseUint(string(data[1:8]), 10, 64)
+	header.LocID, _ = strconv.ParseUint(string(data[9:16]), 10, 64)
+	header.IccID, _ = strconv.ParseUint(string(data[17:22]), 10, 64)
 	header.Uptime, _ = strconv.ParseUint(string(data[23:28]), 10, 64)
 
 	entity, _, err := message.decode(uint16(header.MsgID), data[29:]) //解析实体对象 entity     buffer : 为消息标识
