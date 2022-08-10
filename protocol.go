@@ -142,30 +142,6 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 
 	data := codec.bufferReceiving.Bytes()
 
-	/*
-		if data[0] == protocol.RegisterByte && data[1] == protocol.RegisterByte {
-			i := 2
-			for ; i < len(data); i++ {
-				if data[i] == protocol.Ipmark {
-					break
-				}
-			}
-			j := i
-			for ; j < len(data); j++ {
-				if data[j] == protocol.Voltagemark {
-					break
-				}
-			}
-			log.WithFields(log.Fields{
-				"DTU":     fmt.Sprintf("%s", data[2:i]),
-				"IP":      fmt.Sprintf("%s", data[i+3:j]),
-				"Voltage": fmt.Sprintf("%s", data[j+2:len(data)-1]),
-			}).Info("Register DTU")
-		}
-
-
-	*/
-	//标识头识别
 	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
 		fmt.Println(data[0], protocol.RegisterByte, protocol.SendByte, protocol.ReceiveByte)
 		log.WithFields(log.Fields{
@@ -179,12 +155,21 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	if data[0] == protocol.SendByte || data[0] == protocol.ReceiveByte {
 		var datalen int
 		datalen = int(data[1])
+		if datalen != len(data) {
+			log.WithFields(log.Fields{
+				"data":   hex.EncodeToString(data),
+				"reason": errors.ErrNotFoundPrefixID,
+			}).Error("[tancy-flow] datalength is wrong")
+			return protocol.Message{}, false, errors.ErrNotFoundPrefixID
+		}
+
 		crc16Hash := crc16.NewCRC16Hash(crc16.CRC16_MODBUS)
 		crc16Hash.Write(data[:datalen-2])
 		crc16HashData := crc16Hash.Sum(nil)
 		crc16HashData2 := hex.EncodeToString(crc16HashData)
 		data[datalen-1], data[datalen-2] = data[datalen-2], data[datalen-1]
 		dataHash := hex.EncodeToString(data[datalen-2 : datalen])
+
 		if dataHash != crc16HashData2 {
 			log.WithFields(log.Fields{
 				"data":   hex.EncodeToString(data),
@@ -193,16 +178,6 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 			return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 		}
 	}
-
-	//end := 1
-	//for ; end < len(data); end++ {
-	//	if data[end] == protocol.PrefixID {
-	//		break
-	//	}
-	//}
-	//if end == len(data) {
-	//	return protocol.Message{}, false, nil
-	//}
 
 	var message protocol.Message
 	if err := message.Decode(data, codec.privateKey); err != nil {
@@ -220,7 +195,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 
 	log.WithFields(log.Fields{
 		"device_id": message.Header.IccID,
-		"hex":       fmt.Sprintf("%0X", data),
+		"hex":       fmt.Sprintf("%0X", data[:]),
 		//"Hex": fmt.Sprintf("0x%x", hex.EncodeToString(data[:end+1])),
 	}).Trace("RX Raw:")
 

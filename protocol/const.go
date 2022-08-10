@@ -4,11 +4,11 @@ const (
 	//注册
 	RegisterByte = byte(0x40)
 
-	//IP
-	Ipmark = byte(0x49)
+	//发送
+	SendByte = byte(0x3e)
 
-	//voltagemark
-	Voltagemark = byte(0x23)
+	//接收
+	ReceiveByte = byte(0x3c)
 
 	// 标志位
 	PrefixID = byte(0x7e)

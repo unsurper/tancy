@@ -8,12 +8,17 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/unsurper/tancy/errors"
 	"reflect"
+	"strconv"
 )
 
 // 消息包
 type Message struct {
 	Header Header
 	Body   Entity
+}
+
+type DHeader struct {
+	MsgID MsgID
 }
 
 // 协议编码
@@ -67,118 +72,35 @@ func (message *Message) Encode(key ...*rsa.PublicKey) ([]byte, error) {
 // 协议解码
 func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 	// 检验标志位
-	if len(data) < 2 || data[0] != PrefixID || data[len(data)-1] != PrefixID {
+	if len(data) < 2 || data[0] != ReceiveByte {
 		return errors.ErrInvalidMessage
 	}
-	data = data[1 : len(data)-1]
+	data = data[2 : len(data)-2]
 	if len(data) == 0 {
 		return errors.ErrInvalidMessage
 	}
 
-	// 获取校验和
-	sum := data[len(data)-1]
-	if data[len(data)-2] != EscapeByte {
-		data = data[:len(data)-1]
-	} else {
-		if (data[len(data)-1]) == EscapeByteSufix1 {
-			sum = EscapeByte
-		} else if data[len(data)-1] == EscapeByteSufix2 {
-			sum = PrefixID
-		} else {
-			return errors.ErrInvalidMessage
-		}
-		data = data[:len(data)-2]
-	}
-
-	// 二进制转义
-	checkSum := byte(0x00)
-	buffer := make([]byte, 0, len(data))
-	for i := 0; i < len(data); {
-		b := data[i]
-		if b != EscapeByte {
-			checkSum = checkSum ^ b
-			buffer = append(buffer, b)
-			i++
-			continue
-		}
-
-		if i+1 >= len(data) {
-			return errors.ErrInvalidMessage
-		}
-
-		b = data[i+1]
-		if b == EscapeByteSufix1 {
-			checkSum = checkSum ^ EscapeByte
-			buffer = append(buffer, EscapeByte)
-		} else if b == EscapeByteSufix2 {
-			checkSum = checkSum ^ PrefixID
-			buffer = append(buffer, PrefixID)
-		} else {
-			return errors.ErrInvalidMessage
-		}
-		i += 2
-	}
-
-	// 检查校验和
-	if len(buffer) == 0 || checkSum != sum {
-		return errors.ErrInvalidCheckSum
-	}
-
-	// 解码消息头
-	if len(buffer) < MessageHeaderSize {
-		return errors.ErrInvalidHeader
-	}
 	var header Header
-	err := header.Decode(buffer)
-	if err != nil {
-		return err
-	}
-	if !header.Property.IsEnablePacket() {
-		buffer = buffer[MessageHeaderSize:]
-	} else {
-		buffer = buffer[MessageHeaderSize+4:]
-	}
+	header.MsgID = MsgID(data[0])
+	header.IccID, _ = strconv.ParseUint(string(data[1:8]), 10, 64)
+	header.DecID, _ = strconv.ParseUint(string(data[9:16]), 10, 64)
+	header.LocID, _ = strconv.ParseUint(string(data[17:22]), 10, 64)
+	header.Uptime, _ = strconv.ParseUint(string(data[23:28]), 10, 64)
 
-	// 解码消息体
-	if uint16(len(buffer)) != header.Property.GetBodySize() {
+	entity, _, err := message.decode(uint16(header.MsgID), data[29:]) //解析实体对象 entity     buffer : 为消息标识
+	if err == nil {
+		message.Body = entity
+	} else {
 		log.WithFields(log.Fields{
 			"id":     fmt.Sprintf("0x%x", header.MsgID),
-			"expect": header.Property.GetBodySize(),
-			"actual": len(buffer),
-		}).Warn("[JT/T808] body length mismatch")
-	} else {
-		if header.Property.IsEnableEncrypt() {
-			if len(key) == 0 || key[0] == nil {
-				log.WithFields(log.Fields{
-					"id":     fmt.Sprintf("0x%x", header.MsgID),
-					"reason": "private key not found",
-				}).Warn("[JT/T808] decrypt body failed")
-				return errors.ErrDecryptMessageFailed
-			}
-
-			buffer, err = DecryptOAEP(sha1.New(), key[0], buffer, nil)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"id":     fmt.Sprintf("0x%x", header.MsgID),
-					"reason": err,
-				}).Warn("[JT/T808] decrypt body failed")
-				return errors.ErrDecryptMessageFailed
-			}
-		}
-
-		entity, _, err := message.decode(uint16(header.MsgID), buffer)
-		if err == nil {
-			message.Body = entity
-		} else {
-			log.WithFields(log.Fields{
-				"id":     fmt.Sprintf("0x%x", header.MsgID),
-				"reason": err,
-			}).Warn("failed to decode message")
-		}
+			"reason": err,
+		}).Warn("failed to decode message")
 	}
 	message.Header = header
 	return nil
 }
+
+//--->
 func (message *Message) decode(typ uint16, data []byte) (Entity, int, error) {
 	creator, ok := entityMapper[typ]
 	if !ok {
@@ -188,13 +110,13 @@ func (message *Message) decode(typ uint16, data []byte) (Entity, int, error) {
 	entity := creator()
 	entityPacket, ok := interface{}(entity).(EntityPacket)
 	if !ok {
-		count, err := entity.Decode(data)
+		count, err := entity.Decode(data) //解析data数据
 		if err != nil {
 			return nil, 0, err
 		}
 		return entity, count, nil
 	}
-
+	fmt.Println()
 	err := entityPacket.DecodePacket(data)
 	if err != nil {
 		return nil, 0, err

@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
+	"github.com/unsurper/tancy/protocol"
 	"net"
 	"runtime/debug"
 	"strconv"
@@ -31,6 +32,8 @@ type Server struct {
 	closeHandler    func(*Session)
 	messageHandlers sync.Map
 }
+
+type MessageHandler func(*Session, *protocol.Message)
 
 type Handler interface {
 	HandleSession(*Session)
@@ -77,6 +80,14 @@ func (server *Server) Run(network string, port int) error {
 	server.server = link.NewServer(listen, &p, 24, server.handler)
 	log.Infof("[tancy-flow] protocol server started on %s", address)
 	return server.server.Serve()
+}
+
+// 停止服务
+func (server *Server) Stop() {
+	if server.server != nil {
+		server.server.Stop()
+		server.server = nil
+	}
 }
 
 // 关闭连接
@@ -136,4 +147,11 @@ func (server *Server) handleClose(session *Session) {
 		"id":        session.ID(),
 		"device_id": session.iccID,
 	}).Debug("session closed")
+}
+
+// 添加消息处理
+func (server *Server) AddHandler(msgID protocol.MsgID, handler MessageHandler) {
+	if handler != nil {
+		server.messageHandlers.Store(msgID, handler)
+	}
 }

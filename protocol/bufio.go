@@ -140,6 +140,37 @@ func (reader *Reader) ReadUint32() (uint32, error) {
 	return binary.BigEndian.Uint32(buf[:]), nil
 }
 
+func (reader *Reader) Readfloat32() (uint32, error) {
+	if reader.r.Len() < 4 {
+		return 0, io.ErrUnexpectedEOF
+	}
+
+	var buf [4]byte
+	n, err := reader.r.Read(buf[:])
+	if err != nil {
+		return 0, err
+	}
+	if n != len(buf) {
+		return 0, io.ErrUnexpectedEOF
+	}
+	return binary.LittleEndian.Uint32(buf[:]), nil
+}
+func (reader *Reader) Readfloat64() (uint32, error) {
+	if reader.r.Len() < 8 {
+		return 0, io.ErrUnexpectedEOF
+	}
+
+	var buf [8]byte
+	n, err := reader.r.Read(buf[:])
+	if err != nil {
+		return 0, err
+	}
+	if n != len(buf) {
+		return 0, io.ErrUnexpectedEOF
+	}
+	return binary.LittleEndian.Uint32(buf[:]), nil
+}
+
 func (reader *Reader) ReadBcdTime() (time.Time, error) {
 	if reader.r.Len() < 6 {
 		return time.Time{}, io.ErrUnexpectedEOF

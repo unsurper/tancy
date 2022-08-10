@@ -3,7 +3,9 @@ package tancy
 import (
 	"errors"
 	"github.com/funny/link"
+	log "github.com/sirupsen/logrus"
 	"github.com/unsurper/tancy/protocol"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 )
@@ -77,17 +79,78 @@ func (session *Session) nextID() uint16 {
 	return uint16(id)
 }
 
-// 回复消息
-func (session *Session) Reply(msg *protocol.Message, result protocol.Result) (uint16, error) {
-	entity := protocol.T808_0x8001{
-		ReplyMsgSerialNo: msg.Header.MsgSerialNo,
-		ReplyMsgID:       msg.Header.MsgID,
-		Result:           result,
-	}
-	return session.Send(&entity)
-}
+//JT808 平台回复设备消息
+//func (session *Session) Reply(msg *protocol.Message, result protocol.Result) (uint16, error) {
+//	entity := protocol.T808_0x8001{
+//		ReplyMsgSerialNo: msg.Header.MsgSerialNo,
+//		ReplyMsgID:       msg.Header.MsgID,
+//		Result:           result,
+//	}
+//	return session.Send(&entity)
+//}
 
 // 获取ID
 func (session *Session) ID() uint64 {
 	return session.session.ID()
+}
+
+// 消息接收事件
+func (session *Session) message(message *protocol.Message) {
+	if message.Header.IccID > 0 {
+		old := atomic.LoadUint64(&session.iccID)
+		if old != 0 && old != message.Header.IccID {
+			log.WithFields(log.Fields{
+				"id":  session.ID(),
+				"old": old,
+				"new": message.Header.IccID,
+			}).Warn("[JT/T 808] terminal IccID is inconsistent")
+		}
+		atomic.StoreUint64(&session.iccID, message.Header.IccID)
+	}
+
+	var msgSerialNo uint16
+	switch message.Header.MsgID {
+	}
+	if msgSerialNo == 0 {
+		return
+	}
+
+	ctx, ok := session.takeRequestContext(msgSerialNo)
+	if ok {
+		defer func() {
+			if err := recover(); err != nil {
+				debug.PrintStack()
+			}
+		}()
+		ctx.callback(message)
+	}
+}
+
+// 添加请求上下文
+func (session *Session) addRequestContext(ctx requestContext) {
+	session.mux.Lock()
+	defer session.mux.Unlock()
+
+	for idx, item := range session.requests {
+		if item.msgID == ctx.msgID {
+			session.requests[idx] = ctx
+			return
+		}
+	}
+	session.requests = append(session.requests, ctx)
+}
+
+// 取出请求上下文
+func (session *Session) takeRequestContext(msgSerialNo uint16) (requestContext, bool) {
+	session.mux.Lock()
+	defer session.mux.Unlock()
+
+	for idx, item := range session.requests {
+		if item.serialNo == msgSerialNo {
+			session.requests[idx] = session.requests[len(session.requests)-1]
+			session.requests = session.requests[:len(session.requests)-1]
+			return item, true
+		}
+	}
+	return requestContext{}, false
 }
