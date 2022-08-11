@@ -155,6 +155,8 @@ func (reader *Reader) Readfloat32() (uint32, error) {
 	}
 	return binary.LittleEndian.Uint32(buf[:]), nil
 }
+
+//LittleEndian高位到低位读取
 func (reader *Reader) Readfloat64() (uint32, error) {
 	if reader.r.Len() < 8 {
 		return 0, io.ErrUnexpectedEOF

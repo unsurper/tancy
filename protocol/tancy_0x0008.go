@@ -44,13 +44,14 @@ func (entity *Tancy_0x0008) Encode() ([]byte, error) {
 }
 
 func (entity *Tancy_0x0008) Decode(data []byte) (int, error) {
-	if len(data) < 50 {
+	datalen := len(data)
+	if datalen < 50 {
 		return 0, ErrInvalidBody
 	}
 	reader := NewReader(data)
-
+	entity.Dates = make([]Date, datalen/50)
 	var err error
-	for i := 0; i < len(data)/4; i++ {
+	for i := 0; i < datalen/50; i++ {
 		entity.Dates[i].Uptime, err = reader.ReadBcdTime()
 		if err != nil {
 			return 0, err

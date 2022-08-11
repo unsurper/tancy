@@ -5,10 +5,10 @@ const (
 	RegisterByte = byte(0x40)
 
 	//发送
-	SendByte = byte(0x3e)
+	SendByte = byte(0x3c)
 
 	//接收
-	ReceiveByte = byte(0x3c)
+	ReceiveByte = byte(0x3e)
 
 	// 标志位
 	PrefixID = byte(0x7e)

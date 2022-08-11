@@ -184,7 +184,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		log.WithFields(log.Fields{
 			"data":   fmt.Sprintf("0x%x", hex.EncodeToString(data)),
 			"reason": err,
-		}).Error("[JT/T 808] failed to receive message")
+		}).Error("[tancy-flow] failed to receive message")
 		return protocol.Message{}, false, err
 	}
 
