@@ -17,9 +17,9 @@ type Date struct {
 	//上传时间
 	Uptime time.Time
 	//标况累积流量
-	OpcumFlow uint32
+	OpcumFlow uint64
 	//工况累积流量
-	WocumFlow uint32
+	WocumFlow uint64
 	//标况瞬时流量
 	WomomFlow uint32
 	//工况瞬时流量
@@ -31,7 +31,7 @@ type Date struct {
 	//状态码
 	State uint32
 	//剩余量
-	Remain uint32
+	Remain uint64
 }
 
 func (entity *Tancy_0x0008) MsgID() MsgID {
@@ -57,32 +57,32 @@ func (entity *Tancy_0x0008) Decode(data []byte) (int, error) {
 			return 0, err
 		}
 		// 标况累积流量
-		entity.Dates[i].OpcumFlow, err = reader.Readfloat64()
+		entity.Dates[i].OpcumFlow, err = reader.ReadFloat64()
 		if err != nil {
 			return 0, err
 		}
 		// 工况累积流量
-		entity.Dates[i].WocumFlow, err = reader.Readfloat64()
+		entity.Dates[i].WocumFlow, err = reader.ReadFloat64()
 		if err != nil {
 			return 0, err
 		}
 		// 标况瞬时流量
-		entity.Dates[i].OpmomFlow, err = reader.Readfloat32()
+		entity.Dates[i].OpmomFlow, err = reader.ReadFloat32()
 		if err != nil {
 			return 0, err
 		}
 		// 工况瞬时流量
-		entity.Dates[i].WomomFlow, err = reader.Readfloat32()
+		entity.Dates[i].WomomFlow, err = reader.ReadFloat32()
 		if err != nil {
 			return 0, err
 		}
 		// 燃气温度
-		entity.Dates[i].TGT, err = reader.Readfloat32()
+		entity.Dates[i].TGT, err = reader.ReadFloat32()
 		if err != nil {
 			return 0, err
 		}
 		// 燃气压力
-		entity.Dates[i].TGP, err = reader.Readfloat32()
+		entity.Dates[i].TGP, err = reader.ReadFloat32()
 		if err != nil {
 			return 0, err
 		}
@@ -92,7 +92,7 @@ func (entity *Tancy_0x0008) Decode(data []byte) (int, error) {
 			return 0, err
 		}
 		//剩余量
-		entity.Dates[i].Remain, err = reader.Readfloat64()
+		entity.Dates[i].Remain, err = reader.ReadFloat64()
 		if err != nil {
 			return 0, err
 		}

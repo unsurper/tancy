@@ -75,19 +75,19 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 	if len(data) < 2 || data[0] != ReceiveByte {
 		return errors.ErrInvalidMessage
 	}
-	data = data[2 : len(data)-2]
 	if len(data) == 0 {
 		return errors.ErrInvalidMessage
 	}
 
 	var header Header
-	header.MsgID = MsgID(data[0])                                     //消息ID
-	header.DecID, _ = strconv.ParseUint(string(data[1:8]), 10, 64)    //燃气表唯一标识码
-	header.LocID, _ = strconv.ParseUint(string(data[9:16]), 10, 64)   //远传位置号
-	header.IccID, _ = strconv.ParseUint(string(data[17:22]), 10, 64)  //用户号Id
-	header.Uptime, _ = strconv.ParseUint(string(data[23:28]), 10, 64) //打包上传时间
+	header.MsgID = MsgID(data[2])                                    //消息ID
+	header.DecID, _ = strconv.ParseUint(string(data[3:10]), 10, 64)  //燃气表唯一标识码
+	header.LocID, _ = strconv.ParseUint(string(data[11:18]), 10, 64) //远传位置号
+	// *需修改IccID
+	header.IccID, _ = strconv.ParseUint(string(data[19:24]), 10, 64)  //用户号Id
+	header.Uptime, _ = strconv.ParseUint(string(data[25:30]), 10, 64) //打包上传时间
+	entity, _, err := message.decode(uint16(header.MsgID), data[31:]) //解析实体对象 entity     buffer : 为消息标识
 
-	entity, _, err := message.decode(uint16(header.MsgID), data[29:]) //解析实体对象 entity     buffer : 为消息标识
 	if err == nil {
 		message.Body = entity
 	} else {

@@ -5,6 +5,8 @@ import (
 )
 
 var (
+	ErrCRC16Failed = errors.New("CRC16 verification failed")
+
 	// 无效消息体
 	ErrInvalidBody = errors.New("invalid body")
 	// 消息体过长
@@ -25,4 +27,6 @@ var (
 	ErrInvalidExtraLength = errors.New("invalid extra length")
 	// 消息解密失败
 	ErrDecryptMessageFailed = errors.New("decrypt message failed")
+	//
+	WTF = errors.New("wtf")
 )

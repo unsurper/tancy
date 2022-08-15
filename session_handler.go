@@ -42,6 +42,7 @@ func (handler sessionHandler) HandleSession(sess *link.Session) {
 			//session.Reply(&message, protocol.T808_0x8001ResultUnsupported)
 			continue
 		}
+		//IICID需要更改
 		session.message(&message)
 	}
 }
