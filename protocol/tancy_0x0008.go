@@ -102,6 +102,7 @@ func (entity *Tancy_0x0008) Decode(data []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	//总帧数
 	entity.TotalFrames, err = reader.ReadByte()
 	if err != nil {
@@ -112,6 +113,5 @@ func (entity *Tancy_0x0008) Decode(data []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-
 	return len(data) - reader.Len(), nil
 }

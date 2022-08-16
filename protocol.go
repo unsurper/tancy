@@ -101,13 +101,13 @@ func (codec *ProtocolCodec) Send(msg interface{}) error {
 
 // 接收消息
 func (codec *ProtocolCodec) Receive() (interface{}, error) {
-	message, ok, err := codec.readFromBuffer()
-	if ok {
-		return message, nil
-	}
-	if err != nil {
-		return nil, err
-	}
+	//message, ok, err := codec.readFromBuffer()
+	//if ok {
+	//	return message, nil
+	//}
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	var buffer [128]byte
 	for {
@@ -151,11 +151,8 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 	}
 
-	CRC16 := false
-	fmt.Println("crc16:", CRC16)
 	//CRC16验证
-	if (data[0] == protocol.SendByte || data[0] == protocol.ReceiveByte) && CRC16 == false {
-		CRC16 = true
+	if data[0] == protocol.SendByte || data[0] == protocol.ReceiveByte {
 
 		var datalen int
 		datalen = int(data[1])

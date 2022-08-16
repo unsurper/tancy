@@ -149,6 +149,29 @@ func (server *Server) handleClose(session *Session) {
 	}).Debug("session closed")
 }
 
+// 分派消息
+func (server *Server) dispatchMessage(session *Session, message *protocol.Message) {
+	log.WithFields(log.Fields{
+		"id": fmt.Sprintf("0x%x", message.Header.MsgID),
+	}).Trace("[tancy-flow] dispatch message")
+
+	handler, ok := server.messageHandlers.Load(message.Header.MsgID)
+	if !ok {
+		log.WithFields(log.Fields{
+			"id": fmt.Sprintf("0x%x", message.Header.MsgID),
+		}).Info("[tancy-flow] dispatch message canceled, handler not found")
+		return
+	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			debug.PrintStack()
+		}
+	}()
+	server.timer.Update(strconv.FormatUint(session.ID(), 10))
+	handler.(MessageHandler)(session, message)
+}
+
 // 添加消息处理
 func (server *Server) AddHandler(msgID protocol.MsgID, handler MessageHandler) {
 	if handler != nil {

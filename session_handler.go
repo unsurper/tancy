@@ -42,7 +42,13 @@ func (handler sessionHandler) HandleSession(sess *link.Session) {
 			//session.Reply(&message, protocol.T808_0x8001ResultUnsupported)
 			continue
 		}
+
+		handler.server.dispatchMessage(session, &message)
+		if message.Header.MsgID == protocol.Msgtancy_0x0008 {
+			sess.Close()
+			break
+		}
 		//IICID需要更改
-		session.message(&message)
+		//session.message(&message)
 	}
 }
