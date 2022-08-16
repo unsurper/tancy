@@ -169,7 +169,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		crc16HashData2 := hex.EncodeToString(crc16HashData)
 		data[datalen-1], data[datalen-2] = data[datalen-2], data[datalen-1]
 		dataHash := hex.EncodeToString(data[datalen-2 : datalen])
-		fmt.Println(dataHash, crc16HashData2)
+		//fmt.Println(dataHash, crc16HashData2)
 		if dataHash != crc16HashData2 {
 			log.WithFields(log.Fields{
 				"data":   hex.EncodeToString(data),
