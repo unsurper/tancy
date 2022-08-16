@@ -3,6 +3,7 @@ package protocol
 import (
 	"github.com/unsurper/tancy/errors"
 	"strconv"
+	"time"
 )
 
 // 封包信息
@@ -14,9 +15,9 @@ type Packet struct {
 // 消息头
 type Header struct {
 	MsgID       MsgID
-	DecID       uint64 //燃气表标识
-	LocID       uint64 //远传表位置号
-	Uptime      uint64 //上传时间
+	DecID       uint64    //燃气表标识
+	LocID       string    //远传表位置号
+	Uptime      time.Time //上传时间
 	Property    Property
 	IccID       uint64
 	MsgSerialNo uint16

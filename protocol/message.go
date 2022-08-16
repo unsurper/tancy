@@ -80,12 +80,28 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 	}
 
 	var header Header
-	header.MsgID = MsgID(data[2])                                    //消息ID
-	header.DecID, _ = strconv.ParseUint(string(data[3:10]), 10, 64)  //燃气表唯一标识码
-	header.LocID, _ = strconv.ParseUint(string(data[11:18]), 10, 64) //远传位置号
+	var err error
+	header.MsgID = MsgID(data[2]) //消息ID
+
+	DecID, err := strconv.Atoi(bcdToString(data[3:11]))
+	if err != nil {
+		return err
+	}
+	header.DecID = uint64(DecID) //燃气表唯一标识码
+
+	header.LocID = bcdToString(data[11:19]) //远传位置号
 	// *需修改IccID
-	header.IccID, _ = strconv.ParseUint(string(data[19:24]), 10, 64)  //用户号Id
-	header.Uptime, _ = strconv.ParseUint(string(data[25:30]), 10, 64) //打包上传时间
+
+	IccID, err := strconv.Atoi(bcdToString(data[19:25]))
+	if err != nil {
+		return err
+	}
+	header.IccID = uint64(IccID)                  //燃气表唯一标识码
+	header.Uptime, err = fromBCDTime(data[25:31]) //打包上传时间
+	if err != nil {
+		return err
+	}
+
 	entity, _, err := message.decode(uint16(header.MsgID), data[31:]) //解析实体对象 entity     buffer : 为消息标识
 
 	if err == nil {
