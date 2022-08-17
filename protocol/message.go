@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rsa"
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/unsurper/tancy/errors"
@@ -89,14 +90,14 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 	}
 	header.DecID = uint64(DecID) //燃气表唯一标识码
 
-	header.LocID = bcdToString(data[11:19]) //远传位置号
-	// *需修改IccID
+	header.LocID = hex.EncodeToString(data[11:19]) //远传位置号
 
 	IccID, err := strconv.Atoi(bcdToString(data[19:25]))
 	if err != nil {
 		return err
 	}
-	header.IccID = uint64(IccID)                  //燃气表唯一标识码
+	header.IccID = uint64(IccID) //燃气表唯一标识码
+
 	header.Uptime, err = fromBCDTime(data[25:31]) //打包上传时间
 	if err != nil {
 		return err
