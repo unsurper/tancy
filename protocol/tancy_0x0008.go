@@ -57,32 +57,32 @@ func (entity *Tancy_0x0008) Decode(data []byte) (int, error) {
 			return 0, err
 		}
 		// 标况累积流量
-		entity.Dates[i].OpcumFlow, err = reader.ReadFloat64()
+		entity.Dates[i].OpcumFlow, err = reader.ReadUint64()
 		if err != nil {
 			return 0, err
 		}
 		// 工况累积流量
-		entity.Dates[i].WocumFlow, err = reader.ReadFloat64()
+		entity.Dates[i].WocumFlow, err = reader.ReadUint64()
 		if err != nil {
 			return 0, err
 		}
 		// 标况瞬时流量
-		entity.Dates[i].OpmomFlow, err = reader.ReadFloat32()
+		entity.Dates[i].OpmomFlow, err = reader.ReadUint32()
 		if err != nil {
 			return 0, err
 		}
 		// 工况瞬时流量
-		entity.Dates[i].WomomFlow, err = reader.ReadFloat32()
+		entity.Dates[i].WomomFlow, err = reader.ReadUint32()
 		if err != nil {
 			return 0, err
 		}
 		// 燃气温度
-		entity.Dates[i].TGT, err = reader.ReadFloat32()
+		entity.Dates[i].TGT, err = reader.ReadUint32()
 		if err != nil {
 			return 0, err
 		}
 		// 燃气压力
-		entity.Dates[i].TGP, err = reader.ReadFloat32()
+		entity.Dates[i].TGP, err = reader.ReadUint32()
 		if err != nil {
 			return 0, err
 		}
@@ -92,7 +92,7 @@ func (entity *Tancy_0x0008) Decode(data []byte) (int, error) {
 			return 0, err
 		}
 		//剩余量
-		entity.Dates[i].Remain, err = reader.ReadFloat64()
+		entity.Dates[i].Remain, err = reader.ReadUint64()
 		if err != nil {
 			return 0, err
 		}
