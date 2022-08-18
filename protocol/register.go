@@ -6,12 +6,27 @@ type MsgID uint16
 const (
 	//  响应间隔或小时记录打包报文
 	Msgtancy_0x0008 MsgID = 0x0008
+	//  响应间隔或小时记录打包报文
+	Msgtancy_0x0009 MsgID = 0x0009
+	//上传计量参数报文
+	Msgtancy_0x000A MsgID = 0x000A
+	//上传登陆信息报文
+	Msgtancy_0x000B MsgID = 0x000B
 )
 
 // 消息实体映射
 var entityMapper = map[uint16]func() Entity{
 	uint16(Msgtancy_0x0008): func() Entity {
 		return new(Tancy_0x0008)
+	},
+	uint16(Msgtancy_0x0009): func() Entity {
+		return new(Tancy_0x0009)
+	},
+	uint16(Msgtancy_0x000A): func() Entity {
+		return new(Tancy_0x000A)
+	},
+	uint16(Msgtancy_0x000B): func() Entity {
+		return new(Tancy_0x000B)
 	},
 }
 
