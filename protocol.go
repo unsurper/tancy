@@ -136,12 +136,13 @@ func (codec *ProtocolCodec) Receive() (interface{}, error) {
 
 // 从缓冲区读取
 func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
+
 	if codec.bufferReceiving.Len() == 0 {
 		return protocol.Message{}, false, nil
 	}
 
 	data := codec.bufferReceiving.Bytes()
-
+	end := 0
 	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
 		fmt.Println(data[0], protocol.RegisterByte, protocol.SendByte, protocol.ReceiveByte)
 		log.WithFields(log.Fields{
@@ -150,6 +151,11 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		}).Error("[tancy-flow] failed to receive message")
 		return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 	}
+
+	////处理设备上线
+	//if data[0] == protocol.RegisterByte {
+	//
+	//}
 
 	//CRC16验证
 	if data[0] == protocol.SendByte || data[0] == protocol.ReceiveByte {
@@ -187,6 +193,8 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		}).Error("[tancy-flow] failed to receive message")
 		return protocol.Message{}, false, err
 	}
+
+	codec.bufferReceiving.Next(end + len(data)) //读取长度+len(data)
 
 	log.WithFields(log.Fields{
 		"device_id":   message.Header.IccID,

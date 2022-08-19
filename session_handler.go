@@ -44,10 +44,10 @@ func (handler sessionHandler) HandleSession(sess *link.Session) {
 		}
 
 		handler.server.dispatchMessage(session, &message)
-		if message.Header.MsgID == protocol.Msgtancy_0x0008 {
-			sess.Close()
-			break
-		}
+		//if message.Header.MsgID == protocol.Msgtancy_0x0008 {
+		//	sess.Close()
+		//	break
+		//}
 		//IICID需要更改
 		//session.message(&message)
 	}

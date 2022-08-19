@@ -10,6 +10,9 @@ const (
 	//接收
 	ReceiveByte = byte(0x3e)
 
+	// IP位
+	IPByte = byte(0x49)
+
 	// 标志位
 	PrefixID = byte(0x7e)
 
