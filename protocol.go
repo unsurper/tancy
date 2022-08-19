@@ -169,10 +169,12 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 			}).Error("[tancy-flow] datalength is wrong")
 			return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 		}
+
 		crc16Hash := crc16.NewCRC16Hash(crc16.CRC16_MODBUS)
 		crc16Hash.Write(data[:datalen-2])
 		crc16HashData := crc16Hash.Sum(nil)
 		crc16HashData2 := hex.EncodeToString(crc16HashData)
+
 		data[datalen-1], data[datalen-2] = data[datalen-2], data[datalen-1]
 		dataHash := hex.EncodeToString(data[datalen-2 : datalen])
 		//fmt.Println(dataHash, crc16HashData2)
