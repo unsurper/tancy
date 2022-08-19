@@ -4,6 +4,8 @@ package protocol
 type MsgID uint16
 
 const (
+	//  注册心跳
+	Msgtancy_0x0040 MsgID = 0x0040
 	//  响应间隔或小时记录打包报文
 	Msgtancy_0x0008 MsgID = 0x0008
 	//  响应间隔或小时记录打包报文
@@ -16,6 +18,9 @@ const (
 
 // 消息实体映射
 var entityMapper = map[uint16]func() Entity{
+	uint16(Msgtancy_0x0040): func() Entity {
+		return new(Tancy_0x0040)
+	},
 	uint16(Msgtancy_0x0008): func() Entity {
 		return new(Tancy_0x0008)
 	},

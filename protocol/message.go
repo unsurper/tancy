@@ -3,7 +3,6 @@ package protocol
 import (
 	"bytes"
 	"crypto/rsa"
-	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -25,55 +24,28 @@ type DHeader struct {
 // 协议编码
 func (message *Message) Encode(key ...*rsa.PublicKey) ([]byte, error) {
 	// 编码消息体
-	count := 0
 	var err error
 	var body []byte
-	checkSum := byte(0x00)
 	if message.Body != nil && !reflect.ValueOf(message.Body).IsNil() {
+
 		body, err = message.Body.Encode()
 		if err != nil {
 			return nil, err
 		}
 
-		if len(key) > 0 && key[0] != nil {
-			message.Header.Property.enableEncrypt()
-			body, err = EncryptOAEP(sha1.New(), key[0], body, nil)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"id":     fmt.Sprintf("0x%x", message.Header.MsgID),
-					"reason": err,
-				}).Warn("[JT/T808] encrypt body failed")
-				return nil, err
-			}
-		}
 	}
-	checkSum, count = message.computeChecksum(body, checkSum, count)
-
-	// 编码消息头
-	message.Header.MsgID = message.Body.MsgID()
-	err = message.Header.Property.SetBodySize(uint16(len(body)))
-	if err != nil {
-		return nil, err
-	}
-	header, err := message.Header.Encode()
-	if err != nil {
-		return nil, err
-	}
-	checkSum, count = message.computeChecksum(header, checkSum, count)
 
 	// 二进制转义
 	buffer := bytes.NewBuffer(nil)
-	buffer.Grow(count + 2)
-	buffer.WriteByte(PrefixID)
-	message.write(buffer, header).write(buffer, body).write(buffer, []byte{checkSum})
-	buffer.WriteByte(PrefixID)
+
+	message.write(buffer, body)
+
 	return buffer.Bytes(), nil
 }
 
 // 协议解码
 func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 	// 检验标志位
-	fmt.Println(data[0], RegisterByte)
 	if len(data) < 2 || (data[0] != ReceiveByte && data[0] != RegisterByte) {
 		return errors.ErrInvalidMessage
 	}
@@ -92,23 +64,30 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 				break
 			}
 		}
-		IccID, err := strconv.ParseUint(string(data[2:i]), 16, 0)
-		fmt.Println(IccID)
+		IccID, err := strconv.Atoi(string(data[2:i]))
 		if err != nil {
 			return err
 		}
-		header.IccID = uint64(IccID) //用户名唯一标识码
+		header.MsgID = MsgID(data[1]) //消息ID
+		header.IccID = uint64(IccID)  //用户名唯一标识码
 
 		log.WithFields(log.Fields{
 			"DTU": fmt.Sprintf("user: %s online", data[2:i]),
 		}).Info("Register DTU")
-
+		entity, _, err := message.decode(uint16(header.MsgID), data) //解析实体对象 entity     buffer : 为消息标识
+		if err == nil {
+			message.Body = entity
+		} else {
+			log.WithFields(log.Fields{
+				"id":     fmt.Sprintf("0x%x", header.MsgID),
+				"reason": err,
+			}).Warn("failed to decode message")
+		}
 		message.Header = header
 		return nil
 	}
 
 	header.MsgID = MsgID(data[2]) //消息ID
-
 	DecID, err := strconv.Atoi(bcdToString(data[3:11]))
 	if err != nil {
 		return err
