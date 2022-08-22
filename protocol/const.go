@@ -10,6 +10,9 @@ const (
 	//接收
 	ReceiveByte = byte(0x3e)
 
+	//打包数据解析
+	PacketByte = byte(0xcc)
+
 	// IP位
 	IPByte = byte(0x49)
 

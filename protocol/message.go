@@ -3,7 +3,6 @@ package protocol
 import (
 	"bytes"
 	"crypto/rsa"
-	"encoding/hex"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/unsurper/tancy/errors"
@@ -46,7 +45,7 @@ func (message *Message) Encode(key ...*rsa.PublicKey) ([]byte, error) {
 // 协议解码
 func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 	// 检验标志位
-	if len(data) < 2 || (data[0] != ReceiveByte && data[0] != RegisterByte) {
+	if len(data) < 2 || (data[0] != ReceiveByte && data[0] != RegisterByte && data[0] != PacketByte) {
 		return errors.ErrInvalidMessage
 	}
 	if len(data) == 0 {
@@ -54,7 +53,6 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 	}
 
 	var header Header
-	var err error
 
 	//处理注册包
 	if data[0] == RegisterByte {
@@ -86,37 +84,28 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 		message.Header = header
 		return nil
 	}
-
-	header.MsgID = MsgID(data[2]) //消息ID
-	DecID, err := strconv.Atoi(bcdToString(data[3:11]))
-	if err != nil {
-		return err
+	if data[0] == PacketByte {
+		header.MsgID = MsgID(data[1]) //消息ID
+		if len(data) != 50 {
+			log.WithFields(log.Fields{
+				"data": fmt.Sprintf("%s", data[:]),
+			}).Warn("Packet length is wrong")
+		}
+		header.IccID = uint64(data[3]) //IICID
+		fmt.Println(data[5:])
+		entity, _, err := message.decode(uint16(header.MsgID), data[5:]) //解析实体对象 entity     buffer : 为消息标识
+		if err == nil {
+			message.Body = entity
+		} else {
+			log.WithFields(log.Fields{
+				"id":     fmt.Sprintf("0x%x", header.MsgID),
+				"reason": err,
+			}).Warn("failed to decode message")
+		}
+		message.Header = header
+		return nil
 	}
-	header.DecID = uint64(DecID) //燃气表唯一标识码
 
-	header.LocID = hex.EncodeToString(data[11:19]) //远传位置号
-
-	IccID, err := strconv.Atoi(bcdToString(data[19:25]))
-	if err != nil {
-		return err
-	}
-	header.IccID = uint64(IccID) //用户名唯一标识码
-
-	header.Uptime, err = fromBCDTime(data[25:31]) //打包上传时间
-	if err != nil {
-		return err
-	}
-
-	entity, _, err := message.decode(uint16(header.MsgID), data[31:]) //解析实体对象 entity     buffer : 为消息标识
-
-	if err == nil {
-		message.Body = entity
-	} else {
-		log.WithFields(log.Fields{
-			"id":     fmt.Sprintf("0x%x", header.MsgID),
-			"reason": err,
-		}).Warn("failed to decode message")
-	}
 	message.Header = header
 	return nil
 }

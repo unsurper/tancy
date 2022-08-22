@@ -121,7 +121,7 @@ func (reader *Reader) ReadUint16() (uint16, error) {
 	if n != len(buf) {
 		return 0, io.ErrUnexpectedEOF
 	}
-	return binary.BigEndian.Uint16(buf[:]), nil
+	return binary.LittleEndian.Uint16(buf[:]), nil
 }
 
 func (reader *Reader) ReadUint32() (uint32, error) {
@@ -137,7 +137,7 @@ func (reader *Reader) ReadUint32() (uint32, error) {
 	if n != len(buf) {
 		return 0, io.ErrUnexpectedEOF
 	}
-	return binary.BigEndian.Uint32(buf[:]), nil
+	return binary.LittleEndian.Uint32(buf[:]), nil
 }
 
 //LittleEndian高位到低位读取

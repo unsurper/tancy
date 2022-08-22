@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"encoding/hex"
 	"fmt"
-	"github.com/deatil/go-crc16/crc16"
 	"github.com/funny/link"
 	log "github.com/sirupsen/logrus"
 	"github.com/unsurper/tancy/errors"
@@ -143,7 +142,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 
 	data := codec.bufferReceiving.Bytes()
 	end := 0
-	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
+	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte && data[0] != protocol.PacketByte {
 		log.WithFields(log.Fields{
 			"data":     hex.EncodeToString(data),
 			"PrefixID": data[0],
@@ -152,40 +151,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 	}
 
-	////处理设备上线
-	//if data[0] == protocol.RegisterByte {
-	//
-	//}
-
 	//CRC16验证
-	if data[0] == protocol.SendByte || data[0] == protocol.ReceiveByte {
-
-		var datalen int
-		datalen = int(data[1])
-		if datalen != len(data) {
-			log.WithFields(log.Fields{
-				"data":   hex.EncodeToString(data),
-				"reason": errors.ErrNotFoundPrefixID,
-			}).Error("[tancy-flow] datalength is wrong")
-			return protocol.Message{}, false, errors.ErrNotFoundPrefixID
-		}
-
-		crc16Hash := crc16.NewCRC16Hash(crc16.CRC16_MODBUS)
-		crc16Hash.Write(data[:datalen-2])
-		crc16HashData := crc16Hash.Sum(nil)
-		crc16HashData2 := hex.EncodeToString(crc16HashData)
-
-		data[datalen-1], data[datalen-2] = data[datalen-2], data[datalen-1]
-		dataHash := hex.EncodeToString(data[datalen-2 : datalen])
-		//fmt.Println(dataHash, crc16HashData2)
-		if dataHash != crc16HashData2 {
-			log.WithFields(log.Fields{
-				"data":   hex.EncodeToString(data),
-				"reason": errors.ErrCRC16Failed,
-			}).Error("[tancy-flow] CRC16 is Wrong")
-			return protocol.Message{}, false, errors.ErrCRC16Failed
-		}
-	}
 
 	var message protocol.Message
 	if err := message.Decode(data, codec.privateKey); err != nil {
