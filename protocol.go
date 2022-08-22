@@ -146,9 +146,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	end := 0
 
 	//ASCII=>HEX
-	datab := string(dataa)
-	datab = strings.Replace(datab, " ", "", -1)
-	data, _ := hex.DecodeString(datab)
+	data, _ := hex.DecodeString(strings.Replace(string(dataa), " ", "", -1))
 
 	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
 		fmt.Println(string(data))
