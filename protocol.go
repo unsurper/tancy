@@ -146,7 +146,9 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	end := 0
 
 	//ASCII=>HEX
-	data, _ := hex.DecodeString(strings.Replace(string(dataa), " ", "", -1))
+	datab := string(dataa)
+	datab = strings.Replace(datab, " ", "", -1)
+	data, _ := hex.DecodeString(datab)
 
 	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
 		fmt.Println(string(data))
@@ -201,7 +203,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		return protocol.Message{}, false, err
 	}
 
-	codec.bufferReceiving.Next(end + len(data)) //读取长度+len(data)
+	codec.bufferReceiving.Next(end + len(dataa)) //读取长度+len(dataa)
 
 	log.WithFields(log.Fields{
 		"device_id":   message.Header.IccID,
