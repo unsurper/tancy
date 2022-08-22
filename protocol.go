@@ -144,11 +144,11 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	data := codec.bufferReceiving.Bytes()
 	end := 0
 	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
-		fmt.Println(data[0], protocol.RegisterByte, protocol.SendByte, protocol.ReceiveByte)
 		log.WithFields(log.Fields{
-			"data":   hex.EncodeToString(data),
-			"reason": errors.ErrNotFoundPrefixID,
-		}).Error("[tancy-flow] failed to receive message")
+			"data":     hex.EncodeToString(data),
+			"PrefixID": data[0],
+			"reason":   errors.ErrNotFoundPrefixID,
+		}).Error("[tancy-flow] failed to receive message PrefixID error")
 		return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 	}
 
