@@ -53,7 +53,7 @@ func bytesSplit(data []byte, limit int) [][]byte {
 }
 
 // bytes转字符串
-func bytesToString(data []byte) string {
+func BytesToString(data []byte) string {
 	n := bytes.IndexByte(data, 0)
 	if n == -1 {
 		return string(data)

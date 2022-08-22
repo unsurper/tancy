@@ -11,6 +11,7 @@ import (
 	"github.com/unsurper/tancy/errors"
 	"github.com/unsurper/tancy/protocol"
 	"io"
+	"strings"
 )
 
 type Protocol struct {
@@ -141,12 +142,18 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		return protocol.Message{}, false, nil
 	}
 
-	data := codec.bufferReceiving.Bytes()
+	dataa := codec.bufferReceiving.Bytes()
 	end := 0
+
+	//ASCII=>HEX
+	datab := string(dataa)
+	datab = strings.Replace(datab, " ", "", -1)
+	data, _ := hex.DecodeString(datab)
+
 	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
-		fmt.Println(data[0], protocol.RegisterByte, protocol.SendByte, protocol.ReceiveByte)
+		fmt.Println(string(data))
 		log.WithFields(log.Fields{
-			"data":   hex.EncodeToString(data),
+			"data":   fmt.Sprintf("%v", data),
 			"reason": errors.ErrNotFoundPrefixID,
 		}).Error("[tancy-flow] failed to receive message")
 		return protocol.Message{}, false, errors.ErrNotFoundPrefixID

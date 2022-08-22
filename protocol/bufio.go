@@ -184,6 +184,6 @@ func (reader *Reader) ReadString(size ...int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return bytesToString(text), nil
+	return BytesToString(text), nil
 
 }
