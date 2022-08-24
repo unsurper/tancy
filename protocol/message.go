@@ -88,19 +88,30 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 	}
 
 	header.MsgID = MsgID(data[2]) //消息ID
-	DecID, err := strconv.Atoi(bcdToString(data[3:11]))
-	if err != nil {
-		return err
+
+	dec := bcdToString(data[3:11])
+	if dec != "" {
+		DecID, err := strconv.Atoi(dec)
+		if err != nil {
+			return err
+		}
+		header.DecID = uint64(DecID) //燃气表唯一标识码
+	} else {
+		header.DecID = uint64(0) //燃气表唯一标识码
 	}
-	header.DecID = uint64(DecID) //燃气表唯一标识码
 
 	header.LocID = hex.EncodeToString(data[11:19]) //远传位置号
 
-	IccID, err := strconv.Atoi(bcdToString(data[19:25]))
-	if err != nil {
-		return err
+	iic := bcdToString(data[19:25])
+	if dec != "" {
+		IccID, err := strconv.Atoi(iic)
+		if err != nil {
+			return err
+		}
+		header.IccID = uint64(IccID) //燃气表唯一标识码
+	} else {
+		header.IccID = uint64(0) //燃气表唯一标识码
 	}
-	header.IccID = uint64(IccID) //用户名唯一标识码
 
 	header.Uptime, err = fromBCDTime(data[25:31]) //打包上传时间
 	if err != nil {

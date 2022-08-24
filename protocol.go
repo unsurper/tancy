@@ -11,7 +11,6 @@ import (
 	"github.com/unsurper/tancy/errors"
 	"github.com/unsurper/tancy/protocol"
 	"io"
-	"strings"
 )
 
 type Protocol struct {
@@ -102,15 +101,15 @@ func (codec *ProtocolCodec) Send(msg interface{}) error {
 
 // 接收消息
 func (codec *ProtocolCodec) Receive() (interface{}, error) {
-	//message, ok, err := codec.readFromBuffer()
-	//if ok {
-	//	return message, nil
-	//}
-	//if err != nil {
-	//	return nil, err
-	//}
+	message, ok, err := codec.readFromBuffer()
+	if ok {
+		return message, nil
+	}
+	if err != nil {
+		return nil, err
+	}
 
-	var buffer [128]byte
+	var buffer [256]byte
 	for {
 		count, err := io.ReadAtLeast(codec.r, buffer[:], 1)
 		if err != nil {
@@ -143,26 +142,22 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	}
 
 	dataa := codec.bufferReceiving.Bytes()
+
+	// to hex
+	data, err := hex.DecodeString(string(dataa))
+	if err != nil {
+		panic(err)
+	}
 	end := 0
 
-	//ASCII=>HEX
-	datab := string(dataa)
-	datab = strings.Replace(datab, " ", "", -1)
-	data, _ := hex.DecodeString(datab)
-
 	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {
-		fmt.Println(string(data))
+
 		log.WithFields(log.Fields{
-			"data":   fmt.Sprintf("%v", data),
+			"data":   fmt.Sprintf("%s", data),
 			"reason": errors.ErrNotFoundPrefixID,
 		}).Error("[tancy-flow] failed to receive message")
 		return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 	}
-
-	////处理设备上线
-	//if data[0] == protocol.RegisterByte {
-	//
-	//}
 
 	//CRC16验证
 	if data[0] == protocol.SendByte || data[0] == protocol.ReceiveByte {
@@ -181,8 +176,6 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		crc16Hash.Write(data[:datalen-2])
 		crc16HashData := crc16Hash.Sum(nil)
 		crc16HashData2 := hex.EncodeToString(crc16HashData)
-
-		data[datalen-1], data[datalen-2] = data[datalen-2], data[datalen-1]
 		dataHash := hex.EncodeToString(data[datalen-2 : datalen])
 		//fmt.Println(dataHash, crc16HashData2)
 		if dataHash != crc16HashData2 {
