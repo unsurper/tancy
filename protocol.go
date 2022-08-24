@@ -109,7 +109,7 @@ func (codec *ProtocolCodec) Receive() (interface{}, error) {
 		return nil, err
 	}
 
-	var buffer [256]byte
+	var buffer [512]byte
 	for {
 		count, err := io.ReadAtLeast(codec.r, buffer[:], 1)
 		if err != nil {
@@ -146,7 +146,10 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	// to hex
 	data, err := hex.DecodeString(string(dataa))
 	if err != nil {
-		panic(err)
+		log.WithFields(log.Fields{
+			"data":   fmt.Sprintf("%s", data),
+			"reason": err,
+		}).Error("[tancy-flow] failed to hex.DecodeString")
 	}
 	end := 0
 

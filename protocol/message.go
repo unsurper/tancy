@@ -70,7 +70,6 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 		}
 		header.MsgID = MsgID(data[1]) //消息ID
 		header.IccID = uint64(IccID)  //用户名唯一标识码
-
 		log.WithFields(log.Fields{
 			"DTU": fmt.Sprintf("user: %s online", data[2:i]),
 		}).Info("Register DTU")
@@ -103,14 +102,12 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 	header.LocID = hex.EncodeToString(data[11:19]) //远传位置号
 
 	iic := bcdToString(data[19:25])
-	if dec != "" {
+	if iic != "" {
 		IccID, err := strconv.Atoi(iic)
 		if err != nil {
 			return err
 		}
 		header.IccID = uint64(IccID) //燃气表唯一标识码
-	} else {
-		header.IccID = uint64(0) //燃气表唯一标识码
 	}
 
 	header.Uptime, err = fromBCDTime(data[25:31]) //打包上传时间

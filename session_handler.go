@@ -4,7 +4,6 @@ import (
 	"github.com/funny/link"
 	log "github.com/sirupsen/logrus"
 	"github.com/unsurper/tancy/protocol"
-	"reflect"
 	"strconv"
 )
 
@@ -38,11 +37,16 @@ func (handler sessionHandler) HandleSession(sess *link.Session) {
 		}
 		// 分发消息
 		message := msg.(protocol.Message)
-		if message.Body == nil || reflect.ValueOf(message.Body).IsNil() {
+		if message.Header.MsgID == protocol.MsgID(protocol.RegisterByte) {
 			//session.Reply(&message, protocol.T808_0x8001ResultUnsupported)
-			continue
+			session.iccID = message.Header.IccID
+
+		} else if message.Header.IccID == 0 {
+			message.Header.IccID = session.iccID
+
 		}
 
+		session.message(&message)
 		handler.server.dispatchMessage(session, &message)
 		//if message.Header.MsgID == protocol.Msgtancy_0x0008 {
 		//	sess.Close()
