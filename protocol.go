@@ -142,14 +142,15 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	}
 
 	dataa := codec.bufferReceiving.Bytes()
+
 	var data []byte
-	if dataa[0] != protocol.RegisterByte {
+	if dataa[0] != protocol.RegisterByte && dataa[0] != protocol.ReceiveByte {
 		// to hex
 		var err error
 		data, err = hex.DecodeString(string(dataa))
 		if err != nil {
 			log.WithFields(log.Fields{
-				"data":   fmt.Sprintf("%s", data),
+				"data":   fmt.Sprintf("%s", dataa),
 				"reason": err,
 			}).Error("[tancy-flow] failed to hex.DecodeString")
 		}
