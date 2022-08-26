@@ -144,7 +144,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	dataa := codec.bufferReceiving.Bytes()
 
 	var data []byte
-	if dataa[0] != protocol.RegisterByte && dataa[0] != protocol.ReceiveByte {
+	if dataa[0] != protocol.RegisterByte && dataa[0] != protocol.ReceiveByte && data[0] != protocol.SendByte {
 		// to hex
 		var err error
 		data, err = hex.DecodeString(string(dataa))
