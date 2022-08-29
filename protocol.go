@@ -142,9 +142,8 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	}
 
 	dataa := codec.bufferReceiving.Bytes()
-
 	var data []byte
-	if dataa[0] != protocol.RegisterByte && dataa[0] != protocol.ReceiveByte && dataa[0] != protocol.SendByte {
+	if dataa[0] == 51 && dataa[1] == 101 {
 		// to hex
 		var err error
 		data, err = hex.DecodeString(string(dataa))
@@ -153,6 +152,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 				"data":   fmt.Sprintf("%s", dataa),
 				"reason": err,
 			}).Error("[tancy-flow] failed to hex.DecodeString")
+			return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 		}
 	} else {
 		data = dataa
@@ -165,7 +165,7 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 		log.WithFields(log.Fields{
 			"data":   fmt.Sprintf("%s", data),
 			"reason": errors.ErrNotFoundPrefixID,
-		}).Error("[tancy-flow] failed to receive message")
+		}).Debug("[tancy-flow] failed to receive message")
 		return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 	}
 
@@ -181,14 +181,15 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 			}).Error("[tancy-flow] datalength is wrong")
 			return protocol.Message{}, false, errors.ErrNotFoundPrefixID
 		}
-
 		crc16Hash := crc16.NewCRC16Hash(crc16.CRC16_MODBUS)
 		crc16Hash.Write(data[:datalen-2])
 		crc16HashData := crc16Hash.Sum(nil)
 		crc16HashData2 := hex.EncodeToString(crc16HashData)
-		dataHash := hex.EncodeToString(data[datalen-2 : datalen])
+		dataHash := hex.EncodeToString(data[datalen-2:])
+		data[datalen-2], data[datalen-1] = data[datalen-1], data[datalen-2]
+		dataHash2 := hex.EncodeToString(data[datalen-2:])
 		//fmt.Println(dataHash, crc16HashData2)
-		if dataHash != crc16HashData2 {
+		if dataHash != crc16HashData2 && dataHash2 != crc16HashData2 {
 			log.WithFields(log.Fields{
 				"data":   hex.EncodeToString(data),
 				"reason": errors.ErrCRC16Failed,
