@@ -35,11 +35,11 @@ func (entity *Tancy_0x0040) Encode() ([]byte, error) {
 	// 功能码
 	writer.WriteByte(entity.FunctionCode)
 
-	// 时间
-	writer.WriteBcdTime(entity.StartTime)
-
-	// 条数
-	writer.WriteByte(entity.Bars)
+	//// 时间
+	//writer.WriteBcdTime(entity.StartTime)
+	//
+	//// 条数
+	//writer.WriteByte(entity.Bars)
 
 	crc16Hash := crc16.NewCRC16Hash(crc16.CRC16_MODBUS)
 	crc16Hash.Write(writer.Bytes())

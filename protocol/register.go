@@ -16,6 +16,8 @@ const (
 	Msgtancy_0x000B MsgID = 0x000B
 	//上传实时打包报文
 	Msgtancy_0x0011 MsgID = 0x0011
+	//上传信号强度
+	Msgtancy_0x0017 MsgID = 0x0017
 )
 
 // 消息实体映射
@@ -37,6 +39,9 @@ var entityMapper = map[uint16]func() Entity{
 	},
 	uint16(Msgtancy_0x0011): func() Entity {
 		return new(Tancy_0x0011)
+	},
+	uint16(Msgtancy_0x0017): func() Entity {
+		return new(Tancy_0x0017)
 	},
 }
 

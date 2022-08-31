@@ -86,6 +86,26 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 		return nil
 	}
 
+	//处理响应信号强度报文
+	if data[2] == 0x17 {
+
+		header.MsgID = MsgID(data[2]) //消息ID
+		header.IccID = uint64(0)      //用户名唯一标识码
+		DecID, _ := strconv.Atoi(bcdToString(data[3:5]))
+		header.DecID = uint64(DecID)                                     //燃气表唯一标识码
+		entity, _, err := message.decode(uint16(header.MsgID), data[3:]) //解析实体对象 entity     buffer : 为消息标识
+		if err == nil {
+			message.Body = entity
+		} else {
+			log.WithFields(log.Fields{
+				"id":     fmt.Sprintf("0x%x", header.MsgID),
+				"reason": err,
+			}).Warn("failed to decode message")
+		}
+		message.Header = header
+		return nil
+	}
+
 	header.MsgID = MsgID(data[2]) //消息ID
 
 	dec := bcdToString(data[3:11])
@@ -107,7 +127,7 @@ func (message *Message) Decode(data []byte, key ...*rsa.PrivateKey) error {
 		if err != nil {
 			return err
 		}
-		header.IccID = uint64(IccID) //燃气表唯一标识码
+		header.IccID = uint64(IccID) //用户唯一标识码
 	}
 
 	header.Uptime, err = fromBCDTime(data[25:31]) //打包上传时间

@@ -2,6 +2,7 @@ package tancy
 
 import (
 	"errors"
+	"fmt"
 	"github.com/funny/link"
 	log "github.com/sirupsen/logrus"
 	"github.com/unsurper/tancy/protocol"
@@ -54,6 +55,10 @@ func (session *Session) Send(entity protocol.Entity) (uint16, error) {
 			MsgSerialNo: session.nextID(),
 		},
 	}
+	//test
+	log.WithFields(log.Fields{
+		"data": fmt.Sprintf("V: %v", message),
+	}).Info("receive data \n")
 
 	err := session.session.Send(message)
 	if err != nil {
