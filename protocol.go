@@ -143,11 +143,6 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 
 	dataa := codec.bufferReceiving.Bytes()
 
-	//test
-	log.WithFields(log.Fields{
-		"data": fmt.Sprintf("V: %v", dataa),
-	}).Info("receive data \n")
-
 	var data []byte
 	if dataa[0] == 51 && dataa[1] == 101 {
 		// to hex
@@ -163,11 +158,6 @@ func (codec *ProtocolCodec) readFromBuffer() (protocol.Message, bool, error) {
 	} else {
 		data = dataa
 	}
-
-	log.WithFields(log.Fields{
-		"data": fmt.Sprintf("V: %v", data),
-	}).Trace("[tancy-flow] failed to hex.DecodeString")
-
 	end := 0
 
 	if data[0] != protocol.RegisterByte && data[0] != protocol.SendByte && data[0] != protocol.ReceiveByte {

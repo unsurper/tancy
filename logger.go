@@ -6,6 +6,7 @@ import (
 )
 
 func init() {
+	log.SetFormatter(&log.TextFormatter{ForceColors: true, FullTimestamp: true})
 	SetLogLevel(TraceLevel)
 	log.StandardLogger().Formatter = &prefixed.TextFormatter{
 		ForceColors:      true,
