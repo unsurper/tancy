@@ -38,21 +38,11 @@ func (handler sessionHandler) HandleSession(sess *link.Session) {
 		// 分发消息
 		message := msg.(protocol.Message)
 		if message.Header.MsgID == protocol.MsgID(protocol.RegisterByte) {
-			//session.Reply(&message, protocol.T808_0x8001ResultUnsupported)
 			session.iccID = message.Header.IccID
-
 		} else if message.Header.IccID == 0 {
 			message.Header.IccID = session.iccID
-
 		}
-
 		session.message(&message)
 		handler.server.dispatchMessage(session, &message)
-		//if message.Header.MsgID == protocol.Msgtancy_0x0008 {
-		//	sess.Close()
-		//	break
-		//}
-		//IICID需要更改
-		//session.message(&message)
 	}
 }
